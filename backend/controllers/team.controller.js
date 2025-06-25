@@ -30,6 +30,21 @@ exports.getallteams = async (req, res) => {
 exports.deleteteam = async (req, res) => {
     try {
         const teamId = req.params.id;
+        const { user_id } = req.body; 
+
+        const result = await pool.query(
+            'SELECT created_by FROM teams WHERE id = $1',[teamId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Team not found' });
+        }
+
+        const createdBy = result.rows[0].created_by;
+
+        if (createdBy !== parseInt(user_id)) {
+            return res.status(403).json({ error: 'Only the team creator (admin) can delete this team' });
+        }
 
         await pool.query('DELETE FROM teams WHERE id = $1', [teamId]);
 
@@ -39,6 +54,7 @@ exports.deleteteam = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
 
 exports.addmember = async (req, res) => {
     try {

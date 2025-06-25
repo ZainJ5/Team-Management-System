@@ -6,7 +6,7 @@ const {
   getallteams,
   addmember,
   removemember
-} = require('./team.controller.js');
+} = require('../controllers/team.controller');
 
 router.post('/createteam', createteam);
 router.get('/allteams', getallteams);
@@ -15,3 +15,4 @@ router.post('/addmember', addmember);
 router.post('/removemember', removemember);
 
 module.exports = router;
+
