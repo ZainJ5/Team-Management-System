@@ -2,10 +2,11 @@ const pool = require('../config/db');
 
 exports.createtask = async (req, res) => {
     try {
-        const { created_by, assigned_to, team_id } = req.body;
+        const { created_by, assigned_to, team_id, title, description, priority, due_date } = req.body;
 
         const result = await pool.query(
-            'INSERT INTO tasks (created_by, assigned_to, team_id) VALUES ($1, $2, $3) RETURNING *',[created_by, assigned_to, team_id]
+            'INSERT INTO tasks (created_by, assigned_to, team_id, title, description, priority, due_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [created_by, assigned_to, team_id, title, description, priority, due_date]
         );
         res.status(200).json({ message: 'Task created successfully.', task: result.rows[0] });
     } catch (err) {
@@ -26,9 +27,16 @@ exports.gettasksforteam = async (req, res) => {
             return res.status(403).json({ error: 'You are not a member of this team.' });
         }
 
-        const tasks = await pool.query(
-            'SELECT * FROM tasks WHERE team_id = $1',[team_id]
-        );
+        const tasks = await pool.query(`
+            SELECT t.*, 
+                   creator.name as creator_name,
+                   assignee.name as assigned_user_name
+            FROM tasks t
+            LEFT JOIN users creator ON t.created_by = creator.id
+            LEFT JOIN users assignee ON t.assigned_to = assignee.id
+            WHERE t.team_id = $1
+            ORDER BY t.created_at DESC
+        `, [team_id]);
 
         res.status(200).json(tasks.rows);
     } catch (err) {
@@ -56,11 +64,7 @@ exports.completetask = async (req, res) => {
         }
 
         await pool.query(
-            'ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT FALSE'
-        );
-
-        await pool.query(
-            'UPDATE tasks SET completed = true WHERE id = $1',[task_id]
+            'UPDATE tasks SET completed = true, updated_at = CURRENT_TIMESTAMP WHERE id = $1',[task_id]
         );
 
         res.status(200).json({ message: 'Task marked as completed.' });

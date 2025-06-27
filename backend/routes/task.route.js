@@ -4,7 +4,7 @@ const {
   createtask,
   gettasksforteam,
   completetask
-} = require('./task.controller.js');
+} = require('../controllers/task.controller');
 
 const middleware = require('../middleware/auth')
 

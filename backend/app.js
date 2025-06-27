@@ -5,6 +5,7 @@ const create_table = require('./setup/table_creation')
 
 const authroute = require('./routes/auth.route')
 const teamroute = require('./routes/team.route')
+const taskroute = require('./routes/task.route')
 
 const app = express()
 app.use(express.json());
@@ -16,7 +17,8 @@ app.use(cors({
 }))
 
 app.use('/api/auth',authroute)
-app.use('/api/team',teamroute)
+app.use('/api/teams',teamroute)
+app.use('/api/tasks',taskroute)
 
 const PORT = process.env.PORT || 5000 
 

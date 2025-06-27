@@ -2,10 +2,11 @@ const pool = require('../config/db');
 
 exports.createteam = async (req, res) => {
     try {
-        const { user_id } = req.body;
+        const { user_id, name, description } = req.body;
 
         const insertteam = await pool.query(
-            'INSERT INTO teams (created_by) VALUES ($1) RETURNING id',[user_id]
+            'INSERT INTO teams (created_by, name, description) VALUES ($1, $2, $3) RETURNING id',
+            [user_id, name, description]
         );
 
         const teamId = insertteam.rows[0].id;
@@ -19,7 +20,16 @@ exports.createteam = async (req, res) => {
 
 exports.getallteams = async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM teams');
+        const result = await pool.query(`
+            SELECT t.*, 
+                   u.name as creator_name,
+                   COUNT(tm.user_id) as member_count
+            FROM teams t
+            LEFT JOIN users u ON t.created_by = u.id
+            LEFT JOIN team_members tm ON t.id = tm.team_id
+            GROUP BY t.id, u.name
+            ORDER BY t.created_at DESC
+        `);
         res.status(200).json(result.rows);
     } catch (err) {
         console.error('Error fetching teams:', err);
@@ -55,7 +65,6 @@ exports.deleteteam = async (req, res) => {
     }
 };
 
-
 exports.addmember = async (req, res) => {
     try {
         const { team_id, user_id } = req.body;
@@ -77,8 +86,7 @@ exports.removemember = async (req, res) => {
         const { team_id, user_id } = req.body;
 
         await pool.query(
-            'DELETE FROM team_members WHERE team_id = $1 AND user_id = $2',
-            [team_id, user_id]
+            'DELETE FROM team_members WHERE team_id = $1 AND user_id = $2',[team_id, user_id]
         );
 
         res.status(200).json({ message: 'Member removed from team successfully.' });

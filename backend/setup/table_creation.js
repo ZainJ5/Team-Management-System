@@ -16,7 +16,10 @@ async function create_table() {
         await pool.query(`
             CREATE TABLE IF NOT EXISTS teams (
                 id SERIAL PRIMARY KEY,
-                created_by INT
+                created_by INT,
+                name VARCHAR(255),
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
 
@@ -25,6 +28,7 @@ async function create_table() {
             CREATE TABLE IF NOT EXISTS team_members (
                 team_id INT,
                 user_id INT,
+                added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (team_id, user_id),
                 CONSTRAINT fk_team FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
                 CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -38,6 +42,13 @@ async function create_table() {
                 created_by INT,
                 assigned_to INT,
                 team_id INT,
+                title VARCHAR(255),
+                description TEXT,
+                priority VARCHAR(20) DEFAULT 'medium',
+                due_date DATE,
+                completed BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
                 CONSTRAINT fk_assigned_to FOREIGN KEY (assigned_to) REFERENCES users(id) ON DELETE SET NULL,
                 CONSTRAINT fk_team_task FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
