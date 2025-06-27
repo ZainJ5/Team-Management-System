@@ -94,9 +94,9 @@ export default function Login() {
           </div>
         </div>
         
-        <div className="mb-6 text-sm text-right">
-          <a href="#" className="text-amber-600 hover:text-amber-700 font-semibold">Forgot password?</a>
-        </div>
+        {/* <div className="mb-6 text-sm text-right">
+          <a href="" className="text-amber-600 hover:text-amber-700 font-semibold">Forgot password?</a>
+        </div> */}
         
         <button 
           type="submit" 
