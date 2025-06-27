@@ -4,6 +4,17 @@ exports.createtask = async (req, res) => {
     try {
         const { created_by, assigned_to, team_id, title, description, priority, due_date } = req.body;
 
+        if (assigned_to) {
+            const memberCheck = await pool.query(
+                'SELECT * FROM team_members WHERE team_id = $1 AND user_id = $2',
+                [team_id, assigned_to]
+            );
+
+            if (memberCheck.rows.length === 0) {
+                return res.status(400).json({ error: 'Cannot assign task to user who is not a member of this team.' });
+            }
+        }
+
         const result = await pool.query(
             'INSERT INTO tasks (created_by, assigned_to, team_id, title, description, priority, due_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
             [created_by, assigned_to, team_id, title, description, priority, due_date]
@@ -74,6 +85,39 @@ exports.completetask = async (req, res) => {
     }
 };
 
+exports.deletetask = async (req, res) => {
+    try {
+        const { task_id } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({ error: 'User not authenticated' });
+        }
+
+        const taskRes = await pool.query(
+            'SELECT * FROM tasks WHERE id = $1', [task_id]
+        );
+
+        if (taskRes.rows.length === 0) {
+            return res.status(404).json({ error: 'Task not found.' });
+        }
+
+        const task = taskRes.rows[0];
+
+        if (task.created_by !== userId) {
+            return res.status(403).json({ error: 'Only the task creator can delete this task.' });
+        }
+
+        await pool.query(
+            'DELETE FROM tasks WHERE id = $1', [task_id]
+        );
+
+        res.status(200).json({ message: 'Task deleted successfully.' });
+    } catch (err) {
+        console.error('Error deleting task:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 
 exports.getUserActivity = async (req, res) => {
     try {
@@ -94,9 +138,10 @@ exports.getUserActivity = async (req, res) => {
             LEFT JOIN users assignee ON t.assigned_to = assignee.id
             LEFT JOIN teams ON t.team_id = teams.id
             LEFT JOIN team_members tm ON t.team_id = tm.team_id
-            WHERE t.created_by = $1 
-               OR t.assigned_to = $1 
-               OR tm.user_id = $1
+            WHERE (t.created_by = $1) 
+               OR (t.assigned_to = $1 AND tm.user_id = $1)
+               OR (tm.user_id = $1 AND t.assigned_to IS NULL)
+               OR (tm.user_id = $1 AND t.assigned_to != $1)
             ORDER BY t.updated_at DESC, t.created_at DESC
             LIMIT 10
         `, [userId]);
@@ -129,9 +174,10 @@ exports.getUserStats = async (req, res) => {
             SELECT DISTINCT t.id, t.completed
             FROM tasks t
             LEFT JOIN team_members tm ON t.team_id = tm.team_id
-            WHERE t.created_by = $1 
-               OR t.assigned_to = $1 
-               OR tm.user_id = $1
+            WHERE (t.created_by = $1) 
+               OR (t.assigned_to = $1 AND tm.user_id = $1)
+               OR (tm.user_id = $1 AND t.assigned_to IS NULL)
+               OR (tm.user_id = $1 AND t.assigned_to != $1)
         `, [userId]);
 
         const allTasks = allTasksResult.rows;
