@@ -14,7 +14,7 @@ export default function Footer() {
             <span className="text-xl font-bold">TaskFlow</span>
           </div>
           <p className="text-gray-400 text-sm">
-            © 2025 TaskFlow. Built with ❤️ for better team collaboration
+            © 2025 TaskFlow. Built by <a className='hover:underline' href="https://zainjamshaid.tech/">Zain Jamshaid</a> for better team collaboration
           </p>
         </div>
       </div>
