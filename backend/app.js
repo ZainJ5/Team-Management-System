@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors({
-  origin: 'https://team-management-system-ten.vercel.app/',       
+  origin: '*',       
   methods: ['GET', 'POST']
 }))
 
