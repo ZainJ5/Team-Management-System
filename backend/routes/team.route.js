@@ -8,6 +8,10 @@ const {
   removemember
 } = require('../controllers/team.controller');
 
+const middleware = require('../middleware/auth')
+
+router.use(middleware)
+
 router.post('/createteam', createteam);
 router.get('/allteams', getallteams);
 router.post('/deleteteam/:id', deleteteam);
