@@ -100,3 +100,26 @@ exports.removemember = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+
+exports.getAvailableUsers = async (req, res) => {
+    try {
+        const { team_id } = req.params;
+
+        const result = await pool.query(`
+            SELECT u.id, u.name, u.email 
+            FROM users u
+            WHERE u.id NOT IN (
+                SELECT tm.user_id 
+                FROM team_members tm 
+                WHERE tm.team_id = $1
+            )
+            ORDER BY u.name
+        `, [team_id]);
+
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Error fetching available users:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};

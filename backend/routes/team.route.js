@@ -5,7 +5,8 @@ const {
   deleteteam,
   getallteams,
   addmember,
-  removemember
+  removemember,
+  getAvailableUsers
 } = require('../controllers/team.controller');
 
 const middleware = require('../middleware/auth')
@@ -17,6 +18,6 @@ router.get('/allteams', getallteams);
 router.post('/deleteteam/:id', deleteteam);
 router.post('/addmember', addmember);
 router.post('/removemember', removemember);
+router.get('/available-users/:team_id', getAvailableUsers);
 
 module.exports = router;
-
