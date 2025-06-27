@@ -11,6 +11,11 @@ exports.createteam = async (req, res) => {
 
         const teamId = insertteam.rows[0].id;
 
+        await pool.query(
+            'INSERT INTO team_members (team_id, user_id) VALUES ($1, $2)',
+            [teamId, user_id]
+        );
+
         res.status(200).json({ team_id: teamId });
     } catch (err) {
         console.error('Error creating team:', err);

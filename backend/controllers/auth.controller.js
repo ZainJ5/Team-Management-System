@@ -91,3 +91,13 @@ exports.userinfo = async (req, res) => {
         res.status(401).json({ error: 'Unauthorized' });
     }
 };
+
+exports.getUsers = async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, name, email FROM users ORDER BY name');
+        res.status(200).json(result.rows);
+    } catch (err) {
+        console.error('Error fetching users:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
