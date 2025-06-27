@@ -16,10 +16,9 @@ import CreateTaskModal from '../components/CreateTaskModal';
 import AddMemberModal from '../components/AddMemberModal';
 
 export default function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   
-  // State management
   const [activeTab, setActiveTab] = useState('overview');
   const [teams, setTeams] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -35,12 +34,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   
-  // Modal states
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   
-  // Form states
   const [teamForm, setTeamForm] = useState({ name: '', description: '' });
   const [taskForm, setTaskForm] = useState({ 
     title: '', 
@@ -52,27 +49,20 @@ export default function Dashboard() {
   });
   const [memberForm, setMemberForm] = useState({ team_id: '', user_id: '' });
 
-  // Keep all existing API functions and useEffects exactly the same...
-  const getAuthHeaders = () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast.error('No authentication token found');
-      logout();
+  useEffect(() => {
+    if (!authLoading && !user) {
       navigate('/auth');
-      return null;
     }
-    return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    };
-  };
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    fetchTeams();
-    fetchUsers();
-    fetchUserActivity();
-    fetchUserStats();
-  }, []);
+    if (user && !authLoading) {
+      fetchTeams();
+      fetchUsers();
+      fetchUserActivity();
+      fetchUserStats();
+    }
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (selectedTeam) {
@@ -86,106 +76,59 @@ export default function Dashboard() {
     }
   }, [showAddMemberModal, memberForm.team_id]);
 
-  // All your existing fetch functions remain the same...
+  const handleApiError = (error, defaultMessage) => {
+    console.error('API Error:', error);
+    if (error.response?.status === 401) {
+      toast.error('Session expired. Please login again.');
+      logout();
+      return;
+    }
+    toast.error(error.response?.data?.error || defaultMessage);
+  };
+
   const fetchUserActivity = async () => {
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tasks/user-activity`, {
-        headers
-      });
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tasks/user-activity`);
       setUserActivity(response.data);
     } catch (error) {
-      console.error('Fetch user activity error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      }
+      handleApiError(error, 'Failed to fetch user activity');
     }
   };
 
   const fetchUserStats = async () => {
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tasks/user-stats`, {
-        headers
-      });
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tasks/user-stats`);
       setUserStats(response.data);
     } catch (error) {
-      console.error('Fetch user stats error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      }
+      handleApiError(error, 'Failed to fetch user stats');
     }
   };
 
   const fetchUsers = async () => {
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/auth/users`, {
-        headers
-      });
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/auth/users`);
       setUsers(response.data);
     } catch (error) {
-      console.error('Fetch users error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error('Failed to fetch users');
-      }
+      handleApiError(error, 'Failed to fetch users');
     }
   };
 
   const fetchAvailableUsers = async (teamId) => {
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/teams/available-users/${teamId}`, {
-        headers
-      });
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/teams/available-users/${teamId}`);
       setAvailableUsers(response.data);
     } catch (error) {
-      console.error('Fetch available users error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error('Failed to fetch available users');
-      }
+      handleApiError(error, 'Failed to fetch available users');
     }
   };
 
   const fetchTeams = async () => {
     try {
       setLoading(true);
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/teams/allteams`, {
-        headers
-      });
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/teams/allteams`);
       setTeams(response.data);
     } catch (error) {
-      console.error('Fetch teams error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error('Failed to fetch teams');
-      }
+      handleApiError(error, 'Failed to fetch teams');
     } finally {
       setLoading(false);
     }
@@ -194,22 +137,10 @@ export default function Dashboard() {
   const fetchTasks = async (teamId) => {
     try {
       setLoading(true);
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
-      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tasks/teamtasks/${teamId}/${user.id}`, {
-        headers
-      });
+      const response = await axios.get(`${import.meta.env.VITE_BASE_URL}/api/tasks/teamtasks/${teamId}/${user.id}`);
       setTasks(response.data);
     } catch (error) {
-      console.error('Fetch tasks error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error('Failed to fetch tasks');
-      }
+      handleApiError(error, 'Failed to fetch tasks');
     } finally {
       setLoading(false);
     }
@@ -218,15 +149,10 @@ export default function Dashboard() {
   const createTeam = async (e) => {
     e.preventDefault();
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
       await axios.post(`${import.meta.env.VITE_BASE_URL}/api/teams/createteam`, {
         user_id: user.id,
         name: teamForm.name,
         description: teamForm.description
-      }, {
-        headers
       });
       toast.success('Team created successfully!');
       setShowCreateTeamModal(false);
@@ -234,27 +160,15 @@ export default function Dashboard() {
       fetchTeams();
       fetchUserStats();
     } catch (error) {
-      console.error('Create team error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error(error.response?.data?.error || 'Failed to create team');
-      }
+      handleApiError(error, 'Failed to create team');
     }
   };
 
   const deleteTeam = async (teamId) => {
     if (window.confirm('Are you sure you want to delete this team? This will also delete all tasks in this team.')) {
       try {
-        const headers = getAuthHeaders();
-        if (!headers) return;
-
         await axios.post(`${import.meta.env.VITE_BASE_URL}/api/teams/deleteteam/${teamId}`, {
           user_id: user.id
-        }, {
-          headers
         });
         toast.success('Team deleted successfully!');
         fetchTeams();
@@ -265,14 +179,7 @@ export default function Dashboard() {
           setTasks([]);
         }
       } catch (error) {
-        console.error('Delete team error:', error);
-        if (error.response?.status === 401) {
-          toast.error('Session expired. Please login again.');
-          logout();
-          navigate('/auth');
-        } else {
-          toast.error(error.response?.data?.error || 'Failed to delete team');
-        }
+        handleApiError(error, 'Failed to delete team');
       }
     }
   };
@@ -280,9 +187,6 @@ export default function Dashboard() {
   const createTask = async (e) => {
     e.preventDefault();
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
       await axios.post(`${import.meta.env.VITE_BASE_URL}/api/tasks/createtask`, {
         created_by: user.id,
         assigned_to: taskForm.assigned_to ? parseInt(taskForm.assigned_to) : user.id,
@@ -291,8 +195,6 @@ export default function Dashboard() {
         description: taskForm.description,
         priority: taskForm.priority,
         due_date: taskForm.due_date || null
-      }, {
-        headers
       });
       toast.success('Task created successfully!');
       setShowCreateTaskModal(false);
@@ -303,26 +205,14 @@ export default function Dashboard() {
         fetchTasks(selectedTeam.id);
       }
     } catch (error) {
-      console.error('Create task error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error(error.response?.data?.error || 'Failed to create task');
-      }
+      handleApiError(error, 'Failed to create task');
     }
   };
 
   const completeTask = async (taskId) => {
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
       await axios.post(`${import.meta.env.VITE_BASE_URL}/api/tasks/completetask/${taskId}`, {
         user_id: user.id
-      }, {
-        headers
       });
       toast.success('Task completed!');
       fetchUserActivity();
@@ -331,13 +221,22 @@ export default function Dashboard() {
         fetchTasks(selectedTeam.id);
       }
     } catch (error) {
-      console.error('Complete task error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error(error.response?.data?.error || 'Failed to complete task');
+      handleApiError(error, 'Failed to complete task');
+    }
+  };
+
+  const deleteTask = async (taskId) => {
+    if (window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) {
+      try {
+        await axios.delete(`${import.meta.env.VITE_BASE_URL}/api/tasks/deletetask/${taskId}`);
+        toast.success('Task deleted successfully!');
+        fetchUserActivity();
+        fetchUserStats();
+        if (selectedTeam) {
+          fetchTasks(selectedTeam.id);
+        }
+      } catch (error) {
+        handleApiError(error, 'Failed to delete task');
       }
     }
   };
@@ -345,14 +244,9 @@ export default function Dashboard() {
   const addMember = async (e) => {
     e.preventDefault();
     try {
-      const headers = getAuthHeaders();
-      if (!headers) return;
-
       await axios.post(`${import.meta.env.VITE_BASE_URL}/api/teams/addmember`, {
         team_id: parseInt(memberForm.team_id),
         user_id: parseInt(memberForm.user_id)
-      }, {
-        headers
       });
       toast.success('Member added successfully!');
       setShowAddMemberModal(false);
@@ -360,23 +254,14 @@ export default function Dashboard() {
       setAvailableUsers([]);
       fetchTeams();
     } catch (error) {
-      console.error('Add member error:', error);
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please login again.');
-        logout();
-        navigate('/auth');
-      } else {
-        toast.error(error.response?.data?.error || 'Failed to add member');
-      }
+      handleApiError(error, 'Failed to add member');
     }
   };
 
   const handleLogout = () => {
     logout();
-    navigate('/auth');
   };
 
-  // Handler functions for components
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
@@ -410,6 +295,21 @@ export default function Dashboard() {
     setAvailableUsers([]);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-amber-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100">
       <Navbar user={user} onLogout={handleLogout} />
@@ -417,7 +317,6 @@ export default function Dashboard() {
       <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div>
             <StatsCards userStats={userStats} />
@@ -425,7 +324,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Teams Tab */}
         {activeTab === 'teams' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -452,7 +350,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Tasks Tab */}
         {activeTab === 'tasks' && (
           <div>
             <div className="flex justify-between items-center mb-6">
@@ -492,6 +389,7 @@ export default function Dashboard() {
               selectedTeam={selectedTeam}
               user={user}
               onCompleteTask={completeTask}
+              onDeleteTask={deleteTask}
               onCreateTask={handleCreateTask}
             />
           </div>

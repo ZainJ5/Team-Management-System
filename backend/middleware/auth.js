@@ -2,7 +2,7 @@ const express  = require('express')
 const jwt = require('jsonwebtoken')
 const pool = require('../config/db')
 
-module.exports = async (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
     try {
         const token = req.header('Authorization')?.replace('Bearer ', '')
         const decoded = jwt.verify(token, process.env.JWT_SECRET)
@@ -18,3 +18,5 @@ module.exports = async (req, res, next) => {
         res.status(401).send('Error Occured',err)
     }
 }
+
+module.exports = authMiddleware;
