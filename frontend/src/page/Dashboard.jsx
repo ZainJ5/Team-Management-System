@@ -350,50 +350,50 @@ export default function Dashboard() {
           </div>
         )}
 
-        {activeTab === 'tasks' && (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Tasks</h2>
-                {selectedTeam && (
-                  <p className="text-gray-600">Team: {selectedTeam.name || `Team #${selectedTeam.id}`}</p>
-                )}
-              </div>
-              <div className="flex space-x-3">
-                <select
-                  onChange={(e) => {
-                    const team = teams.find(t => t.id === parseInt(e.target.value));
-                    setSelectedTeam(team);
-                  }}
-                  value={selectedTeam?.id || ''}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
-                >
-                  <option value="">Select Team</option>
-                  {teams.map((team) => (
-                    <option key={team.id} value={team.id}>{team.name || `Team #${team.id}`}</option>
-                  ))}
-                </select>
-                <button
-                  onClick={handleCreateTask}
-                  className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold flex items-center space-x-2"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  <span>Create Task</span>
-                </button>
-              </div>
-            </div>
-            <TaskGrid
-              tasks={tasks}
-              selectedTeam={selectedTeam}
-              user={user}
-              onCompleteTask={completeTask}
-              onDeleteTask={deleteTask}
-              onCreateTask={handleCreateTask}
-            />
-          </div>
+{activeTab === 'tasks' && (
+  <div>
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-4">
+      <div className="min-w-0 flex-1">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">Tasks</h2>
+        {selectedTeam && (
+          <p className="text-sm sm:text-base text-gray-600 truncate">Team: {selectedTeam.name || `Team #${selectedTeam.id}`}</p>
         )}
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+        <select
+          onChange={(e) => {
+            const team = teams.find(t => t.id === parseInt(e.target.value));
+            setSelectedTeam(team);
+          }}
+          value={selectedTeam?.id || ''}
+          className="w-full sm:w-auto px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm sm:text-base"
+        >
+          <option value="">Select Team</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>{team.name || `Team #${team.id}`}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleCreateTask}
+          className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors font-semibold flex items-center justify-center space-x-2 text-sm sm:text-base"
+        >
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          </svg>
+          <span>Create Task</span>
+        </button>
+      </div>
+    </div>
+    <TaskGrid
+      tasks={tasks}
+      selectedTeam={selectedTeam}
+      user={user}
+      onCompleteTask={completeTask}
+      onDeleteTask={deleteTask}
+      onCreateTask={handleCreateTask}
+    />
+  </div>
+)}
       </div>
 
       <Footer />
