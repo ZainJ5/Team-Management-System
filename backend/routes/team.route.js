@@ -9,9 +9,9 @@ const {
   getAvailableUsers
 } = require('../controllers/team.controller');
 
-const middleware = require('../middleware/auth')
+const authMiddleware = require('../middleware/auth');
 
-router.use(middleware)
+router.use(authMiddleware);
 
 router.post('/createteam', createteam);
 router.get('/allteams', getallteams);

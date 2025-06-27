@@ -19,6 +19,8 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
           console.error('Authentication error:', error);
           localStorage.removeItem('authToken');
+          delete axios.defaults.headers.common['Authorization'];
+          setUser(null);
         }
       }
       setLoading(false);
@@ -27,12 +29,31 @@ export const AuthProvider = ({ children }) => {
     checkAuthStatus();
   }, []);
 
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401 && user) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, [user]);
+
   const login = async (email, password) => {
     try {
       const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/auth/login`, { email, password });
-      localStorage.setItem('authToken', response.data.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      setUser(response.data.user);
+      const { token, user: userData } = response.data;
+      
+      localStorage.setItem('authToken', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(userData);
+      
       return response.data;
     } catch (error) {
       throw error;
@@ -42,9 +63,12 @@ export const AuthProvider = ({ children }) => {
   const signup = async (name, email, password) => {
     try {
       const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/api/auth/register`, { name, email, password });
-      localStorage.setItem('authToken', response.data.token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
-      setUser(response.data.user);
+      const { token, user: userData } = response.data;
+      
+      localStorage.setItem('authToken', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(userData);
+      
       return response.data;
     } catch (error) {
       throw error;
@@ -64,4 +88,10 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
